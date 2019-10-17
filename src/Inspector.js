@@ -1,24 +1,8 @@
 import is from 'is_js';
 import NOT_SET, { isUnset } from './notSet';
+import { eString, orTest } from './utilities';
 
 const GOOD_PARAMS = 'test,ifBad,name,and,or'.split(',');
-
-const eString = (value, error, params) => {
-  if (is.function(error)) {
-    return error(value, params);
-  }
-  if (is.string(error)) {
-    let token = 'value';
-    try {
-      token = `${value}`;
-    } catch (err) {
-    }
-
-    return error.replace(/%value%/g, token);
-  }
-
-  return error;
-};
 
 export default class Inspector {
   constructor(...args) {
@@ -150,12 +134,7 @@ export default class Inspector {
   _arrayTest(value) {
     let outcome;
     if (this._or) {
-      outcome = this.test.reduce((result, test) => {
-        if (result === false) {
-          return false;
-        }
-        return test.do(value);
-      }, NOT_SET);
+      outcome = orTest(this.test, value);
     } else {
       outcome = this.test.reduce((result, test) => {
         if (!isUnset(result)) {
