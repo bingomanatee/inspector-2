@@ -50,6 +50,48 @@ tap.test(p.name, (suite) => {
 
         sYNtest.end();
       });
+
+      rmTest.test('ascending - basic ', (ascTest) => {
+        const isAscending = trial()
+          .each(['integer', (value, index, list) => {
+            if (index === 0) return false;
+            const prev = list[index - 1];
+
+            return prev + 1 !== value;
+          }]);
+
+        isAscending.errors(['a']);
+        ascTest.same(isAscending.errors(1), '1 must be a array', 'fails first test');
+        ascTest.same(isAscending.errors(['a']), 'a must be a integer', 'fails array of bad values');
+        ascTest.same(isAscending.errors([1, 2, 3]), false, 'good data');
+        ascTest.same(isAscending.errors([1, 2, 4]), 'bad value <4>', 'bad ascending');
+
+        ascTest.end();
+      });
+
+      rmTest.test('ascending', (ascTest) => {
+        const isAscending = trial()
+          .eachWithDetail(['integer', (value, index, list) => {
+            if (index === 0) return false;
+            const prev = list[index - 1];
+
+            return prev + 1 !== value;
+          }], (value, [error, item, index, list]) => {
+            if (/bad value/.test(error)) {
+              return `${item} ([${index}]) is not one more than ${list[index - 1]}`;
+            }
+            return error;
+          });
+
+        isAscending.errors(['a']);
+        ascTest.same(isAscending.errors(1), '1 must be a array', 'fails first test');
+        ascTest.same(isAscending.errors(['a']), 'a must be a integer', 'fails array of bad values');
+        ascTest.same(isAscending.errors([1, 2, 3]), false, 'good data');
+        ascTest.same(isAscending.errors([1, 2, 4]), '4 ([2]) is not one more than 2', 'bad ascending');
+
+        ascTest.end();
+      });
+
       rmTest.end();
     });
     inspectorTest.end();

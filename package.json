@@ -1,7 +1,7 @@
 {
   "name": "@wonderlandlabs/inspector",
-  "version": "2.0.0",
-  "description": "recursive testing",
+  "version": "2.0.1",
+  "description": "recursive validation for data",
   "main": "lib/index.js",
   "module": "es/index.js",
   "files": [

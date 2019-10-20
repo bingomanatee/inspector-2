@@ -61,11 +61,12 @@ class Inspector {
     return this;
   }
 
-  each(test) {
+  each(...args) {
+    const testItem = new Inspector(...args);
     const each = (list) => {
       const result = list.reduce((out, item, i) => {
         if (!isUnset(out)) return out;
-        return exec(test, item, i, list);
+        return exec(testItem, item, i, list);
       }, UNSET);
       if (isUnset(result)) return false;
       return result;
@@ -73,6 +74,25 @@ class Inspector {
     return this.and([
       new Inspector('array'),
       each,
+    ]);
+  }
+
+
+  eachWithDetail(test, ifError = UNSET) {
+    const testIns = new Inspector(test);
+    const each = (list) => {
+      const result = list.reduce((out, item, i) => {
+        if (!isUnset(out)) return out;
+        const error = exec(testIns, item, i, list);
+        if (error) return [error, item, i, list];
+        return false;
+      }, UNSET);
+      if (isUnset(result)) return false;
+      return result;
+    };
+    return this.and([
+      'array',
+      new Inspector(each, ifError),
     ]);
   }
 
@@ -154,7 +174,7 @@ class Inspector {
     return this;
   }
 
-  errors(value) {
+  errors(value, ...args) {
     let result = false;
 
     if (this._union === 'and') {
@@ -162,7 +182,7 @@ class Inspector {
         if (error) {
           return error;
         }
-        return exec(test, value);
+        return exec(test, value, ...args);
       }, false);
     } else if (this._union === 'or') {
     //  console.log('or items: ', this._query);
@@ -172,10 +192,10 @@ class Inspector {
         const type = typeof (test);
         let tResult;
         if (test instanceof Inspector) {
-          tResult = test.errors(value);
+          tResult = test.errors(value, ...args);
         }
         if (type === 'function') {
-          tResult = test(value);
+          tResult = test(value, ...args);
         }
         if (type === 'string') {
           if (!is.fn(is[test])) {

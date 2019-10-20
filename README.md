@@ -1,3 +1,7 @@
+# Inspector: a complex validation engine for multi-part validation
+
+Inspector is a javascript library for creating value tests. 
+
 Inspector evaluates things using one or more tests and returns validation results. The reason I'm writing it is
 that validation libraries that exist don't seem to express boolean series well -- i.e., 
 "the value either doesn't exist or it meets these conditions" or "the value passes one of these tests".
@@ -76,26 +80,122 @@ Some notes on the root YNtest block:
 Note the isStringYesOrNo test is reused - once as an iterator test for the each, 
 and again as one of the forks of the "or" test.
 
-## The Building Blocks
+# The Building Blocks
 
 `trial(test, errorFilter?)` returns an Inspector instance. Inspectors contain a test *or an array of tests* that are executed over a value when the inspectors' `error(value)` method. 
 
 Optionally you can define an error filter - a function `(value, error) => ... :string` or a string template. String templates replace the tokens '%value%' with the input value. 
 
-### Some important principles
-
-#### "False is the new true"
+## False is the new true
 
 In trial, "false is the new true"; false(y) means a test value has passed (none of the tests have failed)
 the expected test, but non-falsy value indicates a failure, explained by the result.
 
-### Inspectors can be passed as tests of other inspectors
+## Passing a string will extract a test from `is`.
+
+Inspector translates strings as function references to the [is](https://www.npmjs.com/package/is) npm library. (not to be confused with the `is.js` library) For convenience,
+
+here is the `is` function list:
+
+### General
+
+ - ``is.a`` (value, type) or ``is.type`` (value, type)
+ - ``is.defined`` (value)
+ - ``is.empty`` (value)
+ - ``is.equal`` (value, other)
+ - ``is.hosted`` (value, host)
+ - ``is.instance`` (value, constructor)
+ - ``is.instanceof`` (value, constructor) - deprecated, because in ES3 browsers, "instanceof" is a reserved word
+ - ``is.nil`` (value)
+ - ``is.null`` (value) - deprecated, because in ES3 browsers, "null" is a reserved word
+ - ``is.undef`` (value)
+ - ``is.undefined`` (value) - deprecated, because in ES3 browsers, "undefined" is a reserved word
+
+### Arguments
+
+ - ``is.args`` (value)
+ - ``is.arguments`` (value) - deprecated, because "arguments" is a reserved word
+ - ``is.args.empty`` (value)
+
+### Array
+
+ - ``is.array`` (value)
+ - ``is.array.empty`` (value)
+ - ``is.arraylike`` (value)
+
+### Boolean
+
+ - ``is.bool`` (value)
+ - ``is.boolean`` (value) - deprecated, because in ES3 browsers, "boolean" is a reserved word
+ - ``is.false`` (value) - deprecated, because in ES3 browsers, "false" is a reserved word
+ - ``is.true`` (value) - deprecated, because in ES3 browsers, "true" is a reserved word
+
+### date
+
+ - ``is.date`` (value)
+
+### element
+
+ - ``is.element`` (value)
+
+### error
+
+ - ``is.error`` (value)
+
+### function
+
+ - ``is.fn`` (value)
+ - ``is.function`` (value) - deprecated, because in ES3 browsers, "function" is a reserved word
+
+### number
+
+ - ``is.number`` (value)
+ - ``is.infinite`` (value)
+ - ``is.decimal`` (value)
+ - ``is.divisibleBy`` (value, n)
+ - ``is.integer`` (value)
+ - ``is.int`` (value) - deprecated, because in ES3 browsers, "int" is a reserved word
+ - ``is.maximum`` (value, others)
+ - ``is.minimum`` (value, others)
+ - ``is.nan`` (value)
+ - ``is.even`` (value)
+ - ``is.odd`` (value)
+ - ``is.ge`` (value, other)
+ - ``is.gt`` (value, other)
+ - ``is.le`` (value, other)
+ - ``is.lt`` (value, other)
+ - ``is.within`` (value, start, finish)
+
+### object
+
+ - ``is.object`` (value)
+
+### regexp
+
+ - ``is.regexp`` (value)
+
+### string
+
+ - ``is.string`` (value)
+
+### encoded binary
+
+ - ``is.base64`` (value)
+ - ``is.hex`` (value)
+
+### Symbols
+ - ``is.symbol`` (value)
+
+### BigInts
+ - ``is.bigint`` (value)
+
+## Inspectors can be passed as tests of other inspectors
 
 As shown in the first examples, Inspectors -- or arrays of inspectors --- can be passed to the trial factory,
 or any of an inspectors' currying methods -- `and(test)`, `or(test)`, and `each(test)`. This is how you can create large
 branching complex tests. 
 
-#### "and inspectors (the default) stop testing if they find an error"
+## `and(...)` inspectors (the default) stop testing if they find an error
 
 so,
 
@@ -108,7 +208,9 @@ const isBob = trial('string')
 
 the regex is safe because if the first test fails, the second test is omitted. 
 
-### "or inspectors stop testing once they don't find an error"
+Passing an array of inspectors to `trial(['number', isGT0, isInteger])` is the same as `trial('number').and([isGTO, isInteger])`.
+
+## `or(...)` inspectors stop testing once they *don't* find an error
 
 conversely or tests stop on the first passed test (function that results in a false value). 
 
@@ -131,12 +233,61 @@ const nonPosNumber = trial(neg)
 
 both tests will only run the first test, unless the number is zero. 
 
-### each (iterators) 
+## `or(..., onFail)` inspectors product an array of errors; best to provide a custom onFail
 
-as a shortcut, if you want to test every element of an arrray. you can call the `.each(test)` 
+Because the error is not failure on a single test but failure of *all* the tests, its best to provide a custom error message
+(either a string or function to interpret the arrays if you want). 
+
+## `.each()` (iterators) apply the test to all elements in an array.  
+
+as a shortcut, if you want to test every element of an array. you can call the `.each(test)` 
 on the trial result, and the input will be automatically validated for array-ness, and 
 the value will only succeed if each element in the array passes the test that is the argument for the 
 `.each(test)` method. See the first example for array testing.  
+
+The test is provided not only the value, but the index and the entire list. 
+
+```javascript
+
+const isAscending = trial()
+  .each(['integer', (value, index, list) => {
+    if (index === 0) return false;
+    const prev = list[index - 1];
+
+    return prev + 1 !== value;
+  }]);
+
+isAscending.errors(['a']);
+console.log(isAscending.errors(1)); // '1 must be a array'
+console.log(isAscending.errors(['a'])); // 'a must be a integer'
+console.log(isAscending.errors([1, 2, 3])); // false
+console.log(isAscending.errors([1, 2, 4])); // 'bad value <4>'
+```
+
+## `.eachWithDetail()` returns more data with the error about the item location and the array.
+
+Sometimes you want the error message to know more about the location and the context of the error. In the above example, for instance you might want to provide insight into the previous value that failed. `.eachWithDetail()` provides that information. You will want to provide a custom error handler for this situation:
+
+```javascript
+const isAscending = trial()
+  .eachWithDetail(['integer', (value, index, list) => {
+    if (index === 0) return false;
+    const prev = list[index - 1];
+
+    return prev + 1 !== value;
+  }], (value, [error, item, index, list]) => {
+    if (/bad value/.test(error)) {
+      return `${item} ([${index}]) is not one more than ${list[index - 1]}`;
+    }
+    return error;
+  });
+
+isAscending.errors(['a']);
+console.log(isAscending.errors(1)); // '1 must be a array'
+console.log(isAscending.errors(['a'])); // 'a must be a integer'
+console.log(isAscending.errors([1, 2, 3])); // false
+console.log(isAscending.errors([1, 2, 4])); // '4 ([2]) is not one more than 2'
+```
 
 ## Optional values
 

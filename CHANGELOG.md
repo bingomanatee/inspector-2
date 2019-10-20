@@ -1,16 +1,5 @@
 ## 2.0.0
 
-First reboot of LGE; entirely new codebase
-* no "start" functions; too tangled and confusing
-* using Rollup over Neutrino
-* note - transactions not operating yet
+using a different format for trial definitions.
 
-## 2.0.1
-* fixed some stream issues
-* fixed issue with action naming
-
-## 2.0.4
-* Added transactional locking
-
-## 2.0.6
-* Removed annoying console logs
+## 2.0.1 allowing eachWithDetail to return detailed information about error location
