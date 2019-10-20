@@ -327,4 +327,4 @@ console.log(optionalEmail.errors('a@b.com')); // , false;
 ## Default error messages
 
 simple (single function) tests return generic error messages on failure: 'bad value <2>'.
-Complex (eachWithIterator, and) trials return all the errors returned as an array.
+Complex (eachWithIterator, or) trials return all the errors returned as an array.
