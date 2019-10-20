@@ -1,11 +1,8 @@
-import Inspector from './Inspector';
-import NOT_SET, { isUnset } from './notSet';
-import {
-  throwIf, all, optional, doTest, orTest,
-} from './utilities';
-
-const { spect } = Inspector;
+import trial from './inspector';
+import UNSET, { isUnset } from './notSet';
 
 export {
-  Inspector, NOT_SET, isUnset, spect, throwIf, all, optional, doTest, orTest,
+  isUnset,
+  trial,
+  UNSET,
 };
