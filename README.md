@@ -62,7 +62,7 @@ const isYNorArrayOfYN = trial(isStringYesOrNo)
   });
 
 console.log(isYNorArrayOfYN.errors(2)); // '2 is not a yes or no string and 2 must be a array');
-console.log(isYNorArrayOfYN.errors([2])); // '[2] is not a yes or no string and 2 is not a yes or no string', 'non list fails with array message');
+console.log(isYNorArrayOfYN.errors([2])); // '[2] is not a yes or no string and 2 is not a yes or no string');
 console.log(isYNorArrayOfYN.errors(['yes', 'no', 'yes'])); // false
 console.log(isYNorArrayOfYN.errors('yes')); // false
 
