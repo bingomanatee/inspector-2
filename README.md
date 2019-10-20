@@ -17,6 +17,8 @@ When you compound tests things get complicated. For instance:
 
 Also for compound tests, it is messy and verbose to customize error conditions for each and every
 way a value can fail. 
+
+<font color=red>** WARNING **: inspector 2.0 has a wholly different than inspector 1.0. </font>
   
 ## A big messy validator
 
@@ -295,16 +297,34 @@ If a value is optional you can use an identity/or pattern to short circuit tests
 
 ```javascript
 
+const emailTest = trial([
+  'string',
+  trial((s) => !/^[\w]+@[\w]+\.[\w]+$/.test(s), '%value% is not a valid email'),
+]);
+
 const optionalEmail = trial((a) => !!a)
-.or (trial(['string', (s) => !/[\w+]@[\w]+\.[\w]+/.test(s)], '%value% is not a valid email'));
+  .or(emailTest, (value, errors) => {
+    if (Array.isArray(errors)) {
+      return errors.reduce((err, item) => {
+        if (/not a valid email/.test(err)) return err;
+        return item;
+      });
+    }
+    return errors;
+  });
 
-console.log(optionalEmail.errors('')); // false
-console.log(optionalEmail.errors('foo')); // 'foo is not a valid email';
-console.log(optionalEmail.errors('a@b.com')) // false
+console.log(emailTest.errors('')); // ' is not a valid email');
+console.log(emailTest.errors('foo')); //  'foo is not a valid email';
+console.log(emailTest.errors(2)); //  '2 must be a string');
+console.log(emailTest.errors('foo@bar.com')); // false;
 
+console.log(optionalEmail.errors('')); //  false);
+console.log(optionalEmail.errors('foo')); //  'foo is not a valid email';
+console.log(optionalEmail.errors(2)); //  '2 must be a string';
+console.log(optionalEmail.errors('a@b.com')); // , false;
 ```
 
 ## Default error messages
 
 simple (single function) tests return generic error messages on failure: 'bad value <2>'.
-Complex (each, and) trials return all the errors returned as an array.
+Complex (eachWithIterator, and) trials return all the errors returned as an array.

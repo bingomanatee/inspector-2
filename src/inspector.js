@@ -65,10 +65,14 @@ class Inspector {
     const testItem = new Inspector(...args);
     const each = (list) => {
       const result = list.reduce((out, item, i) => {
-        if (!isUnset(out)) return out;
+        if (!isUnset(out)) {
+          return out;
+        }
         return exec(testItem, item, i, list);
       }, UNSET);
-      if (isUnset(result)) return false;
+      if (isUnset(result)) {
+        return false;
+      }
       return result;
     };
     return this.and([
@@ -82,12 +86,18 @@ class Inspector {
     const testIns = new Inspector(test);
     const each = (list) => {
       const result = list.reduce((out, item, i) => {
-        if (!isUnset(out)) return out;
+        if (!isUnset(out)) {
+          return out;
+        }
         const error = exec(testIns, item, i, list);
-        if (error) return [error, item, i, list];
+        if (error) {
+          return [error, item, i, list];
+        }
         return false;
       }, UNSET);
-      if (isUnset(result)) return false;
+      if (isUnset(result)) {
+        return false;
+      }
       return result;
     };
     return this.and([
@@ -112,7 +122,9 @@ class Inspector {
     } else if (fn instanceof Inspector) {
       this._query.push(fn);
     } else if (Array.isArray(fn)) {
-      if (!fn.length) return this;
+      if (!fn.length) {
+        return this;
+      }
       return this.and(fn);
     } else {
       throw new Error('strange type of function:', fn);
@@ -149,20 +161,16 @@ class Inspector {
   }
 
   or(list, ifBad = UNSET) {
-    if (!Array.isArray(list)) {
-      list = [list];
-    }
-    if (this._query.length) {
-      return new Inspector(null, ifBad)
-        .or([this, ...list]);
-    }
-    this._query = [...list];
-    this._union = 'or';
-    if (!isUnset(ifBad)) {
-      this.ifBad(ifBad);
+    if (!this._query.length) {
+      this.q(list);
+      this._union = 'or';
+      return this;
     }
 
-    return this;
+    const insp = new Inspector(this, ifBad)
+      .q(list);
+    insp._union = 'or';
+    return insp;
   }
 
   add(list) {
@@ -185,32 +193,26 @@ class Inspector {
         return exec(test, value, ...args);
       }, false);
     } else if (this._union === 'or') {
-    //  console.log('or items: ', this._query);
+      //  console.log('or items: ', this._query);
       result = this._query.reduce((errors, test) => {
-        if (!errors) return false;
-
-        const type = typeof (test);
-        let tResult;
-        if (test instanceof Inspector) {
-          tResult = test.errors(value, ...args);
+        if (!errors) {
+          return false;
         }
-        if (type === 'function') {
-          tResult = test(value, ...args);
+        const tResult = exec(test, value, ...args);
+        if (!tResult) {
+          return false;
         }
-        if (type === 'string') {
-          if (!is.fn(is[test])) {
-            throw new Error(`${test} is not a function of is`);
-          }
-          tResult = !is[test](value);
+        if (isUnset(errors)) {
+          return Array.isArray(tResult) ? tResult : [tResult];
         }
-        if (!tResult) return false;
         return Array.isArray(tResult) ? [...errors, ...tResult] : [...errors, tResult];
-      }, []);
+      }, UNSET);
     } else {
       throw new Error(`strange union ${this._union}`);
     }
 
-    //  console.log('queries', this._query, 'union: ', this._union, 'value: ', value, 'result: ', result);
+    // console.log('errors: queries', this._query, 'union: ', this._union, 'value: ', value, 'result: ', result);
+
     if (result) {
       return this.onError(value, result);
     }

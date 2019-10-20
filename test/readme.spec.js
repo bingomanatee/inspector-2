@@ -1,17 +1,4 @@
-/*
-const isStringAndYesOrNo = spect(['string', a => /^yes|no$/.test(a)], 'not yes or no string');
-const eachElementIsYesOrNoString = all(isStringAndYesOrNo, 'a', true);
-const isArrayOfYesOrNoStrings = spect(eachElementIsYesOrNoString, ([err, index, val]) => {
-  return `item ${i} (${val} is not a yes or no string`
-});
-
-const YNtest = spect([isStringAndYesOrNo, isArrayOfYesOrNoStrings])
-
-YNtest('yes');               // false
-YNtest('f');                 // ['string is not yes or no']
-YNtest(1);                   // ['not a string or array']
-YNtest(['no', 'yes']);       // false
-YNtest(['yes', 'no', 'f' ]); // ['array element 2 failed - (f) string is not yes or no'] */
+const { inspect } = require('util');
 
 /* eslint-disable camelcase */
 const tap = require('tap');
@@ -31,7 +18,9 @@ tap.test(p.name, (suite) => {
 
         const isYNorArrayOfYN = trial(isStringYesOrNo)
           .or(eachElementIsYesOrNoString, (value, error) => {
-            if (Array.isArray(error)) return error.join(' and ');
+            if (Array.isArray(error)) {
+              return error.join(' and ');
+            }
             return error;
           });
 
@@ -54,7 +43,9 @@ tap.test(p.name, (suite) => {
       rmTest.test('ascending - basic ', (ascTest) => {
         const isAscending = trial()
           .each(['integer', (value, index, list) => {
-            if (index === 0) return false;
+            if (index === 0) {
+              return false;
+            }
             const prev = list[index - 1];
 
             return prev + 1 !== value;
@@ -72,7 +63,9 @@ tap.test(p.name, (suite) => {
       rmTest.test('ascending', (ascTest) => {
         const isAscending = trial()
           .eachWithDetail(['integer', (value, index, list) => {
-            if (index === 0) return false;
+            if (index === 0) {
+              return false;
+            }
             const prev = list[index - 1];
 
             return prev + 1 !== value;
@@ -90,6 +83,36 @@ tap.test(p.name, (suite) => {
         ascTest.same(isAscending.errors([1, 2, 4]), '4 ([2]) is not one more than 2', 'bad ascending');
 
         ascTest.end();
+      });
+
+      rmTest.test('optional', (opt) => {
+        const emailTest = trial([
+          'string',
+          trial((s) => !/^[\w]+@[\w]+\.[\w]+$/.test(s), '%value% is not a valid email'),
+        ]);
+
+        const optionalEmail = trial((a) => !!a)
+          .or(emailTest, (value, errors) => {
+            if (Array.isArray(errors)) {
+              return errors.reduce((err, item) => {
+                if (/not a valid email/.test(err)) return err;
+                return item;
+              });
+            }
+            return errors;
+          });
+
+        opt.same(emailTest.errors(''), ' is not a valid email');
+        opt.same(emailTest.errors('foo'), 'foo is not a valid email');
+        opt.same(emailTest.errors(2), '2 must be a string');
+        opt.same(emailTest.errors('foo@bar.com'), false);
+
+        opt.same(optionalEmail.errors(''), false);
+        opt.same(optionalEmail.errors('foo'), 'foo is not a valid email');
+        opt.same(optionalEmail.errors(2), '2 must be a string');
+        opt.same(optionalEmail.errors('a@b.com'), false);
+
+        opt.end();
       });
 
       rmTest.end();
